@@ -1,23 +1,40 @@
 .DEFAULT_GOAL := help
 
 .SILENT : help
+.Phony : apply init plan destroy destroy-confirm clean validate
 
 company := home
 project := terraform
 version := 0.0.1
+
+# defaults
+PROVIDER := aws
+PLANFILE := terraform.planfile
+
+## Clean structure
+clean:
+	@rm -f ./providers/${PROVIDER}/${PLANFILE}
+	@rm -f ./providers/${PROVIDER}/destroy.plan
 
 ## Initializes Terraform
 init:
 	@cd providers/aws; terraform init
 
 ## Plan infrastructure
-plan:
-	@cd providers/aws; terraform plan -out=PLANFILE
+plan: clean init
+	@cd providers/${PROVIDER}; terraform plan -out=${PLANFILE}
 
 ## Apply infrastructure
 apply:
-	@cd providers/aws; terraform apply PLANFILE; rm -rf PLANFILE
+	@cd providers/${PROVIDER}; terraform apply ${PLANFILE}; cat terraform.tfstate | grep public_ip
 
+## Destroy Plan
+destroy: clean
+	@cd providers/${PROVIDER}; terraform plan -destroy -out=destroy.plan
+
+## Destroy Infrastructure Confirmation
+destroy-confirm:
+	@cd providers/${PROVIDER}; terraform apply destroy.plan
 
 ## show help screen
 help:
